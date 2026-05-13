@@ -1,151 +1,426 @@
-import React, { useMemo, useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Future vs CFD Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
 
-export default function FutureOptionCfdVolDashboard() {
-  const [futureOpen, setFutureOpen] = useState("4722");
-  const [cfdOpen, setCfdOpen] = useState("4717");
-  const [iv, setIv] = useState("28.53");
-  const [sd1, setSd1] = useState("84.11");
-  const [sd2, setSd2] = useState("168.22");
-  const [sd3, setSd3] = useState("252.33");
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
 
-  const data = useMemo(() => {
-    const future = Number(futureOpen) || 0;
-    const cfd = Number(cfdOpen) || 0;
-    const impliedVol = Number(iv) || 0;
-    const ranges = [Number(sd1) || 0, Number(sd2) || 0, Number(sd3) || 0];
+    .page {
+      min-height: 100vh;
+      padding: 32px;
+    }
 
-    const diff = future - cfd;
-    const rangeEst = (impliedVol / 16) * future / 100;
-    const zones = ranges.map((range, index) => ({
-      n: index + 1,
-      range,
-      lower: cfd - range,
-      upper: cfd + range,
-    }));
+    .container {
+      max-width: 1152px;
+      margin: 0 auto;
+    }
 
-    return { future, cfd, impliedVol, diff, rangeEst, zones };
-  }, [futureOpen, cfdOpen, iv, sd1, sd2, sd3]);
+    .space > * + * { margin-top: 24px; }
 
-  const fmt = (num) =>
-    Number(num).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .header {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+    }
+
+    .badge {
+      display: inline-block;
+      margin-bottom: 12px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: 800;
+      color: #020617;
+    }
+
+    @media (min-width: 768px) {
+      h1 { font-size: 36px; }
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: #475569;
+      font-size: 16px;
+    }
+
+    .formula {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      padding: 16px;
+      color: #334155;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      font-size: 14px;
+    }
+
+    .formula-title {
+      color: #1d4ed8;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: #64748b;
+      margin-top: 8px;
+    }
+
+    .grid-3, .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+      .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+      padding: 20px;
+    }
+
+    .input-card label {
+      display: block;
+      color: #334155;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .input-card input {
+      width: 100%;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      padding: 0 16px;
+      font-size: 18px;
+      color: #020617;
+      outline: none;
+    }
+
+    .input-card input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px #dbeafe;
+    }
+
+    .metric-green {
+      background: linear-gradient(135deg, #ecfdf5, #ffffff);
+      border-color: #a7f3d0;
+    }
+
+    .metric-blue {
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      border-color: #bfdbfe;
+    }
+
+    .metric-label {
+      color: #475569;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .green { color: #047857; }
+    .red { color: #b91c1c; }
+    .blue { color: #1d4ed8; }
+    .violet { color: #6d28d9; }
+    .slate { color: #334155; }
+
+    .table-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .table-head {
+      padding: 20px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f5f3ff;
+    }
+
+    .table-head h2 {
+      margin: 0;
+      color: #6d28d9;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .table-head p {
+      margin: 4px 0 0;
+      color: #475569;
+      font-size: 12px;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    thead {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    th {
+      padding: 12px;
+      font-weight: 800;
+    }
+
+    td {
+      padding: 12px;
+      border-top: 1px solid #e2e8f0;
+      font-weight: 700;
+    }
+
+    tr:hover { background: #f8fafc; }
+
+    .sd-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #ede9fe;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .definition {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+      padding: 20px;
+    }
+
+    .definition-title {
+      color: #92400e;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .definition-body {
+      color: #334155;
+      line-height: 1.65;
+    }
+
+    .definition-body div + div { margin-top: 8px; }
+
+    .credit {
+      text-align: center;
+      color: #475569;
+      font-size: 18px;
+      padding-top: 12px;
+    }
+
+    .credit strong {
+      color: #1e293b;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="container space">
+      <section class="header">
+        <div>
+          <div class="badge">Volatility Dashboard</div>
+          <h1>Future vs CFD</h1>
+          <p class="subtitle">Calculate Diff, Range Estimate, and 1-3 SD Price Zones using manual SD ranges.</p>
+        </div>
+        <div class="formula">
+          <div class="formula-title">Formula</div>
+          <div>Range Est = (Implied Volatility / 16) x Future Open</div>
+          <div class="muted">1-3 SD Zones use manually entered ranges.</div>
+        </div>
+      </section>
+
+      <section class="grid-3">
+        <div class="card input-card">
+          <label for="futureOpen">Future Open ($)</label>
+          <input id="futureOpen" type="number" step="0.01" inputmode="decimal" value="4722" />
+        </div>
+        <div class="card input-card">
+          <label for="cfdOpen">CFD Open ($)</label>
+          <input id="cfdOpen" type="number" step="0.01" inputmode="decimal" value="4717" />
+        </div>
+        <div class="card input-card">
+          <label for="iv">Implied Volatility (%)</label>
+          <input id="iv" type="number" step="0.01" inputmode="decimal" value="28.53" />
+        </div>
+      </section>
+
+      <section class="grid-3">
+        <div class="card input-card">
+          <label for="sd1">1 SD Range ($)</label>
+          <input id="sd1" type="number" step="0.01" inputmode="decimal" value="84.11" />
+        </div>
+        <div class="card input-card">
+          <label for="sd2">2 SD Range ($)</label>
+          <input id="sd2" type="number" step="0.01" inputmode="decimal" value="168.22" />
+        </div>
+        <div class="card input-card">
+          <label for="sd3">3 SD Range ($)</label>
+          <input id="sd3" type="number" step="0.01" inputmode="decimal" value="252.33" />
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card metric-green">
+          <div class="metric-label">Diff = Future Open - CFD Open</div>
+          <div id="diff" class="metric-value green">0.00</div>
+          <div id="diffCalc" class="muted">-</div>
+        </div>
+        <div class="card metric-blue">
+          <div class="metric-label blue">Range Estimate = (Implied Volatility / 16) x Future Open</div>
+          <div id="rangeEst" class="metric-value blue">0.00</div>
+          <div id="rangeCalc" class="muted">-</div>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-head">
+          <h2>1-3 SD Zones</h2>
+          <p>Enter custom ranges for each SD level using CFD Open as the center price.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Zone</th>
+                <th>Lower ($)</th>
+                <th>Center CFD ($)</th>
+                <th>Upper ($)</th>
+                <th>Manual Range ($)</th>
+              </tr>
+            </thead>
+            <tbody id="zoneRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="definition">
+        <div class="definition-title">Trading Definition</div>
+        <div class="definition-body">
+          <div><strong class="red">1 SD Break:</strong> Use Mean Reversion strategy when price moves outside the 1 SD zone and shows signs of rejection or exhaustion.</div>
+          <div><strong class="blue">2 SD Break:</strong> Suitable for Mean Reversion trading with enough distance for recovery positioning using Trend Following strategies.</div>
+          <div><strong class="violet">3 SD Break:</strong> Be cautious of potential Gamma Squeeze conditions. Volatility expansion and aggressive directional moves may accelerate beyond normal expectations.</div>
+        </div>
+      </section>
+
+      <footer class="credit">
+        Credit: <strong>M Trader & Tomatosaucehize</strong>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+    const futureOpenInput = document.getElementById("futureOpen");
+    const cfdOpenInput = document.getElementById("cfdOpen");
+    const ivInput = document.getElementById("iv");
+    const sd1Input = document.getElementById("sd1");
+    const sd2Input = document.getElementById("sd2");
+    const sd3Input = document.getElementById("sd3");
+
+    const diffEl = document.getElementById("diff");
+    const diffCalcEl = document.getElementById("diffCalc");
+    const rangeEstEl = document.getElementById("rangeEst");
+    const rangeCalcEl = document.getElementById("rangeCalc");
+    const zoneRowsEl = document.getElementById("zoneRows");
+
+    function toNumber(value) {
+      return Number(value) || 0;
+    }
+
+    function fmt(num) {
+      return Number(num).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function calculate() {
+      const future = toNumber(futureOpenInput.value);
+      const cfd = toNumber(cfdOpenInput.value);
+      const impliedVol = toNumber(ivInput.value);
+      const ranges = [toNumber(sd1Input.value), toNumber(sd2Input.value), toNumber(sd3Input.value)];
+
+      const diff = future - cfd;
+      const rangeEst = (impliedVol / 16) * future / 100;
+
+      diffEl.textContent = fmt(diff);
+      diffEl.className = "metric-value " + (diff > 0 ? "green" : diff < 0 ? "red" : "slate");
+      diffCalcEl.textContent = fmt(future) + " - " + fmt(cfd);
+
+      rangeEstEl.textContent = fmt(rangeEst);
+      rangeCalcEl.textContent = "(" + impliedVol + " / 16) x " + fmt(future) + " / 100";
+
+      zoneRowsEl.innerHTML = "";
+      ranges.forEach((range, index) => {
+        const n = index + 1;
+        const lower = cfd - range;
+        const upper = cfd + range;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="sd-badge">${n} SD</span></td>
+          <td class="red">${fmt(lower)}</td>
+          <td class="slate">${fmt(cfd)}</td>
+          <td class="green">${fmt(upper)}</td>
+          <td class="blue">+/- ${fmt(range)}</td>
+        `;
+        zoneRowsEl.appendChild(tr);
+      });
+    }
+
+    [futureOpenInput, cfdOpenInput, ivInput, sd1Input, sd2Input, sd3Input].forEach((input) => {
+      input.addEventListener("input", calculate);
     });
 
-  const diffColor = data.diff > 0 ? "text-emerald-700" : data.diff < 0 ? "text-red-700" : "text-slate-700";
-
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 p-4 md:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="inline-block mb-3 bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-sm font-bold">
-              Volatility Dashboard
-            </div>
-            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-950">Future vs CFD</h1>
-            <p className="text-slate-600 mt-2">Calculate Diff, Range Estimate, and 1-3 SD Price Zones using manual SD ranges.</p>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-slate-700 shadow-sm">
-            <div className="font-semibold text-blue-700 mb-1">Formula</div>
-            <div>Range Est = (Implied Volatility / 16) x Future Open</div>
-            <div className="text-slate-500 mt-2">1-3 SD Zones use manually entered ranges.</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <InputCard label="Future Open ($)" value={futureOpen} onChange={setFutureOpen} />
-          <InputCard label="CFD Open ($)" value={cfdOpen} onChange={setCfdOpen} />
-          <InputCard label="Implied Volatility (%)" value={iv} onChange={setIv} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <InputCard label="1 SD Range ($)" value={sd1} onChange={setSd1} />
-          <InputCard label="2 SD Range ($)" value={sd2} onChange={setSd2} />
-          <InputCard label="3 SD Range ($)" value={sd3} onChange={setSd3} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-2xl shadow-lg p-6">
-            <div className="text-slate-600 mb-2 font-medium">Diff = Future Open - CFD Open</div>
-            <div className={`text-3xl font-black ${diffColor}`}>{fmt(data.diff)}</div>
-            <div className="text-slate-500 mt-2">{fmt(data.future)} - {fmt(data.cfd)}</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-2xl shadow-lg p-6">
-            <div className="text-blue-700 mb-2 font-medium">Range Estimate = (Implied Volatility / 16) x Future Open</div>
-            <div className="text-3xl font-black text-blue-700">{fmt(data.rangeEst)}</div>
-            <div className="text-slate-500 mt-2">({data.impliedVol} / 16) x {fmt(data.future)} / 100</div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden">
-          <div className="p-5 border-b border-slate-200 bg-violet-50">
-            <h2 className="text-lg font-bold text-violet-700">1-3 SD Zones</h2>
-            <p className="text-xs text-slate-600 mt-1">Enter custom ranges for each SD level using CFD Open as the center price.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left">
-              <thead className="bg-slate-100 text-slate-700">
-                <tr>
-                  <th className="p-3 font-bold">Zone</th>
-                  <th className="p-3 font-bold">Lower ($)</th>
-                  <th className="p-3 font-bold">Center CFD ($)</th>
-                  <th className="p-3 font-bold">Upper ($)</th>
-                  <th className="p-3 font-bold">Manual Range ($)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.zones.map((row) => (
-                  <tr key={row.n} className="border-t border-slate-200 hover:bg-slate-50">
-                    <td className="p-4">
-                      <span className="inline-block px-3 py-1 rounded-full bg-violet-100 text-violet-700 border border-violet-200 text-xs font-black">{row.n} SD</span>
-                    </td>
-                    <td className="p-3 text-red-700 font-bold">{fmt(row.lower)}</td>
-                    <td className="p-3 text-slate-900 font-bold">{fmt(data.cfd)}</td>
-                    <td className="p-3 text-emerald-700 font-bold">{fmt(row.upper)}</td>
-                    <td className="p-3 text-blue-700 font-bold">+/- {fmt(row.range)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl shadow-lg p-5">
-          <div className="text-amber-800 font-bold text-lg mb-2">Trading Definition</div>
-          <div className="text-slate-700 leading-relaxed space-y-2">
-            <div>
-              <span className="font-bold text-red-700">1 SD Break:</span> Use Mean Reversion strategy when price moves outside the 1 SD zone and shows signs of rejection or exhaustion.
-            </div>
-            <div>
-              <span className="font-bold text-blue-700">2 SD Break:</span> Suitable for Mean Reversion trading with enough distance for recovery positioning using Trend Following strategies.
-            </div>
-            <div>
-              <span className="font-bold text-violet-700">3 SD Break:</span> Be cautious of potential Gamma Squeeze conditions. Volatility expansion and aggressive directional moves may accelerate beyond normal expectations.
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center text-base text-slate-600 pt-3">
-          Credit: <span className="font-bold text-slate-800">M Trader & Tomatosaucehize</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InputCard({ label, value, onChange }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-lg p-5 space-y-3">
-      <label className="block text-slate-700 font-bold">{label}</label>
-      <input
-        type="number"
-        step="0.01"
-        inputMode="decimal"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-12 rounded-xl border border-slate-300 bg-white px-4 text-lg text-slate-950 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-      />
-    </div>
-  );
-}
+    calculate();
+  </script>
+</body>
+</html>
